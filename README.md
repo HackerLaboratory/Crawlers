@@ -1,2 +1,2 @@
 # Crawlers
-Python系列爬虫
+Python爬虫
