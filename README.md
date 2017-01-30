@@ -11,8 +11,11 @@ Python爬虫。对应Python版本是Python2
 * 面向对象
 * 多进程
 * 多线程
+* 锁
+* 异常处理
 * 正则表达式
 * 集合
 * 字典
+* 队列
 * urllib
 * urllib2

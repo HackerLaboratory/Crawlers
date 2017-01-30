@@ -8,6 +8,8 @@
 # 引入基础包
 import multiprocessing
 import threading
+import Queue
+import time
 import re
 import urllib
 import urllib2
@@ -23,10 +25,12 @@ from config import startURL
 class Crawler(object):
 
     def __init__(self):
-        print 'init'
         # 初始化url管理器(集合)
         self.new_urls = set()       #新的还未被爬取的url集合，使用集合进行管理
         self.old_urls = set()       #已经被爬取过的url集合，也是使用集合进行管理
+        # 初始化html输出队列
+        htmlQueue = Queue.Queue()   #下载下来的html页面存放的队列
+        parseQueue = Queue.Queue()  #解析后内容存储的队列
         # 配置多线程 or 多进程
         if isMultiProcess:
             self.MultiKind = multiprocessing.Process
@@ -40,8 +44,21 @@ class Crawler(object):
     """
     # URL下载方法
     def download(self):
-        print 'download'
+        while True:
+            try:
+                url = self.get_new_url()
+                if url is None:
+                    time.sleep(10)
+                # 使用urllib2下载url指向的html内容
+                response = urllib2.urlopen(url)
+                # 如果http的返回码不是200，说明请求下载失败
+                if 200 == response.getcode():
+                    html = response.read()
+                    htmlQueue.put(html)
+            except Exception, e:
+                print Exception, ': ', e
 
+                
     """
     URL管理器相关方法
     """
