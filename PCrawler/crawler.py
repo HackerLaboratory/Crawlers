@@ -35,10 +35,16 @@ class Crawler(object):
             self.MultiKind = threading.Thread
             self.MultiLock = threading.Lock()
 
+    """
+    URL下载相关方法
+    """
     # URL下载方法
     def download(self):
         print 'download'
 
+    """
+    URL管理器相关方法
+    """
     # 添加一个新的url
     def add_new_url(self, url):
         if url is None:
@@ -49,15 +55,18 @@ class Crawler(object):
                 self.new_urls.add(url)
             finally:
                 self.MultiLock.release()
+
     # 添加批量url
     def add_new_urls(self, urls):
         if (urls is None) or (0 == len(urls)):
             return
         for url in urls:
             self.add_new_url(url)
+
     # 判断是否还有未爬取的url
     def has_new_url(self):
         return (0 != len(self.new_urls))
+
     # 获取一个新的待爬取的url
     def get_new_url(self):
         self.MultiLock.acquire()
@@ -68,14 +77,23 @@ class Crawler(object):
         finally:
             self.MultiLock.release()
 
+    """
+    HTML解析相关方法
+    """
     # HTML解析方法
     def parse(self):
         print 'parse'
 
+    """
+    解析内容输出相关方法
+    """
     # 解析内容输出(存储方法)
     def output(self):
         print 'output'
 
+    """
+    爬虫运行方法
+    """
     # 按照配置的线程/进程、按照实现的方法运行爬虫
     def Execute(self):
         # 按照配置启动n个下载线程/进程
