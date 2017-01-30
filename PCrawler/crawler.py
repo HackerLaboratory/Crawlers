@@ -24,8 +24,14 @@ class Crawler(object):
 
     def __init__(self):
         print 'init'
+        # 初始化url管理器(集合)
         self.new_urls = set()       #新的还未被爬取的url集合，使用集合进行管理
         self.old_urls = set()       #已经被爬取过的url集合，也是使用集合进行管理
+        # 配置多线程 or 多进程
+        if isMultiProcess:
+            self.MultiKind = multiprocessing.Process
+        else:
+            self.MultiKind = threading.Thread
 
     # URL下载方法
     def download(self):
@@ -62,18 +68,13 @@ class Crawler(object):
 
     # 按照配置的线程/进程、按照实现的方法运行爬虫
     def Execute(self):
-        if isMultiProcess:
-            MultiKind = multiprocessing.Process
-        else:
-            MultiKind = threading.Thread
-
         # 按照配置启动n个下载线程/进程
         for i in range(downloadCount):
-            multi = MultiKind(target=self.download)
+            multi = self.MultiKind(target=self.download)
             multi.start()
 
         # 按照配置启动n个输出线程/进程
         for i in range(outputCount):
-            multi = MultiKind(target=self.output)
+            multi = self.MultiKind(target=self.output)
             multi.start()
 
