@@ -8,6 +8,7 @@ Python爬虫。对应Python版本是Python2
 
 #涉及到的Python知识点
 
+* 面向对象
 * 多进程
 * 多线程
 * 正则表达式
