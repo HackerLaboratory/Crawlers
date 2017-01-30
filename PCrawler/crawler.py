@@ -9,41 +9,45 @@ import urllib2
 
 # 导入配置文件中的配置信息
 from config import isMultiProcess
-from config import downloader
-from config import outputer
-from config import reURL
+from config import downloadCount
+from config import outputCount
+from config import reURLs
 from config import startURL
 
 class Crawler(object):
+    def __init__(self):
+        print 'init'
 
     # URL下载方法
-    def download():
-        pass
+    def download(self):
+        print 'download'
 
     # URL管理方法
-    def manage():
-        pass
+    def manage(self):
+        print 'manage'
 
     # HTML解析方法
-    def parse():
-        pass
+    def parse(self):
+        print 'parse'
 
     # 解析内容输出(存储方法)
-    def output():
-        pass
+    def output(self):
+        print 'output'
 
     # 按照配置的线程/进程、按照实现的方法运行爬虫
-    def Execute():
+    def Execute(self):
         if isMultiProcess:
             MultiKind = multiprocessing.Process
         else:
             MultiKind = threading.Thread
+
         # 按照配置启动n个下载线程/进程
-        for i in range(downloader):
-            multi = MultiKind(target = download, args = None)
-            multi,start()
+        for i in range(downloadCount):
+            multi = MultiKind(target=self.download)
+            multi.start()
 
         # 按照配置启动n个输出线程/进程
-        for i in range(outputer):
-            multi = MultiKind(target = output, args = None)
+        for i in range(outputCount):
+            multi = MultiKind(target=self.output)
             multi.start()
+
