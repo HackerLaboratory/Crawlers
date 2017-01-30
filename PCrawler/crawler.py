@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 
+# 引入基础包
 import multiprocessing
 import threading
+import re
 
 # 导入配置文件中的配置信息
 from config import isMultiProcess
