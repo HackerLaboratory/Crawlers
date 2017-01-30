@@ -6,12 +6,6 @@ isMultiProcess = True
 #下载器线程/进程数量
 downloader = 2
 
-#解析器进程/线程个数
-parser = 2
-
-#URL管理器
-manager = 2
-
 #数据存储器进程/线程个数
 outputer = 2
 

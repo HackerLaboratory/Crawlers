@@ -1,6 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import multiprocessing
+import threading
+
+# 导入配置文件中的配置信息
+from config import isMultiProcess
+from config import downloader
+from config import outputer
+from config import reURL
+from config import startURL
+
 class Crawler(object):
+
     # URL下载方法
     def download():
         pass
@@ -20,3 +31,7 @@ class Crawler(object):
     # 按照配置的线程/进程、按照实现的方法运行爬虫
     def Execute():
         pass
+        # 按照配置启动n个下载线程/进程
+
+        # 按照配置启动n个输出线程/进程
+
