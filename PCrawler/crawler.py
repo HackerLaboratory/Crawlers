@@ -19,7 +19,9 @@ from config import outputCount
 from config import reURLs
 from config import startURL
 
+# 爬虫基类
 class Crawler(object):
+
     def __init__(self):
         print 'init'
 
