@@ -30,8 +30,10 @@ class Crawler(object):
         # 配置多线程 or 多进程
         if isMultiProcess:
             self.MultiKind = multiprocessing.Process
+            self.MultiLock = multiprocessing.Lock()
         else:
             self.MultiKind = threading.Thread
+            self.MultiLock = threading.Lock()
 
     # URL下载方法
     def download(self):
@@ -42,7 +44,11 @@ class Crawler(object):
         if url is None:
             return
         if (url not in self.new_urls) and (url not in self.old_urls):
-            self.new_urls.add(url)
+            self.MultiLock.acquire()
+            try:
+                self.new_urls.add(url)
+            finally:
+                self.MultiLock.release()
     # 添加批量url
     def add_new_urls(self, urls):
         if (urls is None) or (0 == len(urls)):
@@ -54,9 +60,13 @@ class Crawler(object):
         return (0 != len(self.new_urls))
     # 获取一个新的待爬取的url
     def get_new_url(self):
-        new_url = self.new_urls.pop()   #pop方法是从集合中获取一个元素，并将其中集合中移除
-        self.old_urls.add(new_url)
-        return new_url
+        self.MultiLock.acquire()
+        try:
+            new_url = self.new_urls.pop()   #pop方法是从集合中获取一个元素，并将其中集合中移除
+            self.old_urls.add(new_url)
+            return new_url
+        finally:
+            self.MultiLock.release()
 
     # HTML解析方法
     def parse(self):
