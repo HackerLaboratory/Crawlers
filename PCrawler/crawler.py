@@ -4,6 +4,8 @@
 import multiprocessing
 import threading
 import re
+import urllib
+import urllib2
 
 # 导入配置文件中的配置信息
 from config import isMultiProcess
@@ -32,8 +34,16 @@ class Crawler(object):
 
     # 按照配置的线程/进程、按照实现的方法运行爬虫
     def Execute():
-        pass
+        if isMultiProcess:
+            MultiKind = multiprocessing.Process
+        else:
+            MultiKind = threading.Thread
         # 按照配置启动n个下载线程/进程
+        for i in range(downloader):
+            multi = MultiKind(target = download, args = None)
+            multi,start()
 
         # 按照配置启动n个输出线程/进程
-
+        for i in range(outputer):
+            multi = MultiKind(target = output, args = None)
+            multi.start()
