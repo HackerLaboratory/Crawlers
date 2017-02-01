@@ -10,7 +10,8 @@ downloadCount = 2
 outputCount = 2
 
 #匹配的URL正则表达式
-reURLs = ['', '']
+reURLs = {'url1': ['download1', 'output1'], 
+          'url2': ['download2', 'output2']}
 
 #开始爬取的URL
 startURL = 'http://www.xumenger.com'
