@@ -3,15 +3,18 @@
 #多线程 or 多进程
 isMultiProcess = True
 
-#下载器线程/进程个数
-downloadCount = 2
+#下载线程/进程个数
+downloadCount = 3
 
-#数据存储器进程/线程个数
-outputCount = 2
+#解析线程/进程个数
+parseCount = 2
+
+#数据存储进程/线程个数
+outputCount = 3
 
 #匹配的URL正则表达式
-reURLs = {'url1': ['parse1', 'output1'], 
-          'url2': ['parse2', 'output2']}
+reURLs = {'url1': 'crawler1', 
+          'url2': 'crawler2'}
 
 #开始爬取的URL
 startURL = 'http://www.xumenger.com'
