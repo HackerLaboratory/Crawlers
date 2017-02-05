@@ -20,6 +20,7 @@ import re
 import urllib
 import urllib2
 
+
 # 导入配置文件中的配置信息
 from config import isMultiProcess
 from config import downloadCount
@@ -28,15 +29,16 @@ from config import outputCount
 from config import reURLs
 from config import startURL
 
+
 # 爬虫基类
 class Crawler(object):
+
     def __init__(self):
         self.isClose = False
         #初始化url管理器(集合)
         self.new_urls = set()       #新的还未被爬取的url集合，使用集合进行管理
         self.old_urls = set()       #已经被爬取过的url集合，也是使用集合进行管理
-        #将初始化URL放到new_urls中
-        self.new_urls.add(startURL)
+        self.new_urls.add(startURL) #将初始化URL放到new_urls中
         #多线程/多进程管理列表
         self.downLoadList = []      #下载线程/进程链表
         self.parseList = []         #解析线程/进程链表
@@ -45,8 +47,8 @@ class Crawler(object):
         if isMultiProcess:
             self.multiKind = multiprocessing.Process
             self.multiLock = multiprocessing.Lock()
-            self.htmlQueue = multiprocessing.Queue()    #下载下来的html页面存放的队列
-            self.parseQueue = multiprocessing.Queue()   #解析后内存存储的队列
+            self.htmlQueue = multiprocessing.Queue()
+            self.parseQueue = multiprocessing.Queue()
         else:
             self.multiKind = threading.Thread
             self.multiLock = threading.Lock()
@@ -57,7 +59,7 @@ class Crawler(object):
     """""""""""""""""""""""""""""""""""""""""
     URL下载相关方法
     """""""""""""""""""""""""""""""""""""""""
-    # URL下载方法
+    # URL下载线程/进程方法
     def download(self):
         while not self.isClose:
             try:
@@ -128,33 +130,68 @@ class Crawler(object):
     """""""""""""""""""""""""""""""""""""""""
     HTML解析相关方法
     """""""""""""""""""""""""""""""""""""""""
-    # HTML解析方法
+    # 解析HTML获取其中的URL
+    def parseURL(self, html):
+        return None
+
+    # 解析HTML获取想要的内容
+    def parseContent(self, html):
+        return None
+
+    # HTML解析线程/进程方法
     def parse(self):
         while not self.isClose:
             try:
+                ErrCode = 0
                 html = self.htmlQueue.get(False)
+                ErrCode = 1
                 #将新的url放入url管理器
-
+                urls = parseURL(html)
+                ErrCode = 2
+                add_new_urls(urls)
+                ErrCode = 3
                 #将解析的内容放入parseQueue
-                
-                print html
-                self.parseQueue.put(html)
+                content = parseContent(html)
+                ErrCode = 4
+                if content is not None:
+                    ErrCode = 5
+                    self.parseQueue.put(content)
+                    ErrCode = 6
             except Queue.Empty, e:
                 print 'htmlQueue中暂时没有数据'
+                time.sleep(1)
+            except Exception, e:
+                print '解析网页出现异常, ErrCode=', str(ErrCode), ', 异常信息: ', e.message
+                time.sleep(1)
+            else:
+                print '其他异常'
                 time.sleep(1)
 
 
     """""""""""""""""""""""""""""""""""""""""
     解析内容输出相关方法
     """""""""""""""""""""""""""""""""""""""""
+    # 输出内容
+    def outputContent(self, content):
+        pass
+
     # 解析内容输出(存储方法)
     def output(self):
         while not self.isClose:
             try:
-                html = self.parseQueue.get(False)
-                print html
+                ErrCode = 0
+                content = self.parseQueue.get(False)
+                ErrCode = 1
+                outputContent(content)
+                ErrCode = 2
             except Queue.Empty, e:
                 print 'parseQueue中暂时没有数据'
+                time.sleep(1)
+            except Exception, e:
+                print '输出内容出现异常, ErrCode=', str(ErrCode), ', 异常信息: ', e.message
+                time.sleep(1)
+            else:
+                print '其他异常'
                 time.sleep(1)
 
 
