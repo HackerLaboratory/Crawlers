@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 实现一个爬虫框架
 * 实现基础的下载器、url管理器、解析器、输出器方法
 * 开发者可以重载这相关方法，个性化自己的爬虫
@@ -9,7 +9,7 @@
 * 下载：下载html页面，放到htmlQueue中
 * 解析：从htmlQueue中取出html页面进行解析，解析的URL放入URL管理器，解析的内容放到parseQueue
 * 输出：从parseQueue中取出解析得到的内容，输出（或者文件，或者数据库，或者其他）
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 # 引入基础包
 import multiprocessing
@@ -51,9 +51,9 @@ class Crawler(object):
             self.htmlQueue = Queue.Queue()
             self.parseQueue = Queue.Queue()
 
-    """
+    """""""""""""""""""""""""""""""""""""""""
     URL下载相关方法
-    """
+    """""""""""""""""""""""""""""""""""""""""
     # URL下载方法
     def download(self):
         while True:
@@ -72,9 +72,9 @@ class Crawler(object):
                 print Exception, ': ', e
 
                 
-    """
+    """""""""""""""""""""""""""""""""""""""""
     URL管理器相关方法
-    """
+    """""""""""""""""""""""""""""""""""""""""
     # 添加一个新的url
     def add_new_url(self, url):
         if url is None:
@@ -101,46 +101,49 @@ class Crawler(object):
     def get_new_url(self):
         self.multiLock.acquire()
         try:
-            new_url = self.new_urls.pop()   #pop方法是从集合中获取一个元素，并将其中集合中移除
-            self.old_urls.add(new_url)
-            return new_url
+            if len(self.new_urls) > 0:
+                new_url = self.new_urls.pop()   #pop方法是从集合中获取一个元素，并将其中集合中移除
+                self.old_urls.add(new_url)
+                return new_url
+            else:
+                return None
         finally:
             self.multiLock.release()
 
-    """
+    """""""""""""""""""""""""""""""""""""""""
     HTML解析相关方法
-    """
+    """""""""""""""""""""""""""""""""""""""""
     # HTML解析方法
     def parse(self):
         print 'parse'
 
-    """
+    """""""""""""""""""""""""""""""""""""""""
     解析内容输出相关方法
-    """
+    """""""""""""""""""""""""""""""""""""""""
     # 解析内容输出(存储方法)
     def output(self):
         print 'output'
 
-    """
+    """""""""""""""""""""""""""""""""""""""""
     爬虫运行方法
-    """
+    """""""""""""""""""""""""""""""""""""""""
     # 按照配置的线程/进程、按照实现的方法运行爬虫
     def Execute(self):
         # 按照配置启动n个下载线程/进程
         for i in range(downloadCount):
             multi = self.multiKind(target=self.download)
             multi.start()
-            downLoadList.append(multi)
+            self.downLoadList.append(multi)
 
         # 按照配置启动n个解析线程/进程
         for i in range(parseCount):
             multi = self.multiKind(target=self.parse)
             multi.start()
-            parseList.append(multi)
+            self.parseList.append(multi)
 
         # 按照配置启动n个输出线程/进程
         for i in range(outputCount):
             multi = self.multiKind(target=self.output)
             multi.start()
-            outputList.append(multi)
+            self.outputList.append(multi)
 
