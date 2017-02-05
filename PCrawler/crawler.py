@@ -32,14 +32,15 @@ from config import startURL
 class Crawler(object):
 
     def __init__(self):
-        # 初始化url管理器(集合)
+        self.isClose = False
+        #初始化url管理器(集合)
         self.new_urls = set()       #新的还未被爬取的url集合，使用集合进行管理
         self.old_urls = set()       #已经被爬取过的url集合，也是使用集合进行管理
-        # 多线程/多进程管理列表
+        #多线程/多进程管理列表
         self.downLoadList = []      #下载线程/进程链表
         self.parseList = []         #解析线程/进程链表
         self.outputList = []        #输出线程/进程链表
-        # 配置多线程 or 多进程
+        #配置多线程 or 多进程
         if isMultiProcess:
             self.multiKind = multiprocessing.Process
             self.multiLock = multiprocessing.Lock()
@@ -56,18 +57,18 @@ class Crawler(object):
     """""""""""""""""""""""""""""""""""""""""
     # URL下载方法
     def download(self):
-        while True:
+        while not self.isClose:
             try:
                 url = self.get_new_url()
                 if url is None:
                     time.sleep(10)
-                # 使用urllib2下载url指向的html内容
+                #使用urllib2下载url指向的html内容
                 response = urllib2.urlopen(url)
-                # 如果http的返回码不是200，说明请求下载失败
+                #如果http的返回码不是200，说明请求下载失败
                 if 200 == response.getcode():
                     html = response.read()
-                    # 下载到的htlm字符串放入htmlQueue队列
-                    htmlQueue.put(html)
+                    #下载到的htlm字符串放入htmlQueue队列
+                    self.htmlQueue.put(html)
             except Exception, e:
                 print Exception, ': ', e
 
@@ -102,7 +103,8 @@ class Crawler(object):
         self.multiLock.acquire()
         try:
             if len(self.new_urls) > 0:
-                new_url = self.new_urls.pop()   #pop方法是从集合中获取一个元素，并将其中集合中移除
+                #pop方法时从集合中获取一个元素，并将其从集合中移除
+                new_url = self.new_urls.pop()
                 self.old_urls.add(new_url)
                 return new_url
             else:
@@ -115,35 +117,46 @@ class Crawler(object):
     """""""""""""""""""""""""""""""""""""""""
     # HTML解析方法
     def parse(self):
-        print 'parse'
+        while not self.isClose:
+            try:
+                html = self.htmlQueue.get(False)
+                print html
+                self.parseQueue.put(html)
+            except Queue.Empty, e:
+                time.sleep(10)
 
     """""""""""""""""""""""""""""""""""""""""
     解析内容输出相关方法
     """""""""""""""""""""""""""""""""""""""""
     # 解析内容输出(存储方法)
     def output(self):
-        print 'output'
+        while not self.isClose:
+            try:
+                html = self.parseQueue.get(False)
+                print html
+            except Queue.Empty, e:
+                print 'parseQueue中暂时没有数据'
+                time.sleep(10)
 
     """""""""""""""""""""""""""""""""""""""""
     爬虫运行方法
     """""""""""""""""""""""""""""""""""""""""
     # 按照配置的线程/进程、按照实现的方法运行爬虫
     def Execute(self):
-        # 按照配置启动n个下载线程/进程
+        #按照配置启动n个下载线程/进程
         for i in range(downloadCount):
             multi = self.multiKind(target=self.download)
-            multi.start()
             self.downLoadList.append(multi)
+            multi.start()
 
-        # 按照配置启动n个解析线程/进程
+        #按照配置启动n个解析线程/进程
         for i in range(parseCount):
             multi = self.multiKind(target=self.parse)
-            multi.start()
             self.parseList.append(multi)
+            multi.start()
 
-        # 按照配置启动n个输出线程/进程
+        #按照配置启动n个输出线程/进程
         for i in range(outputCount):
             multi = self.multiKind(target=self.output)
-            multi.start()
             self.outputList.append(multi)
-
+            multi.start()
