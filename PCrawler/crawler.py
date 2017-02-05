@@ -15,10 +15,12 @@
 import multiprocessing
 import threading
 import Queue
+import logging
 import time
 import re
 import urllib
 import urllib2
+import urlparse
 
 
 # 导入配置文件中的配置信息
@@ -35,6 +37,12 @@ class Crawler(object):
 
     def __init__(self):
         self.isClose = False
+        #日志配置
+        logging.basicConfig(level=logging.DEBUG,
+                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                datefmt='%a, %d %b %Y %H:%M:%S',
+                filename='log',
+                filemode='w')
         #初始化url管理器(集合)
         self.new_urls = set()       #新的还未被爬取的url集合，使用集合进行管理
         self.old_urls = set()       #已经被爬取过的url集合，也是使用集合进行管理
@@ -78,13 +86,14 @@ class Crawler(object):
                 #如果http的返回码不是200，说明请求下载失败
                 if 200 == response.getcode():
                     ErrCode = 6
-                    html = response.read()
+                    pageHtml = response.read()
                     #下载到的htlm字符串放入htmlQueue队列
                     ErrCode = 7
+                    html = [url, pageHtml]
                     self.htmlQueue.put(html)
                     ErrCode = 8
             except Exception, e:
-                print '下载网页出现异常，ErrCode=', str(ErrCode), ', 异常信息: ', e.message
+                logging.error('下载网页出现异常，ErrCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
 
                 
     """""""""""""""""""""""""""""""""""""""""
@@ -132,11 +141,29 @@ class Crawler(object):
     """""""""""""""""""""""""""""""""""""""""
     # 解析HTML获取其中的URL
     def parseURL(self, html):
-        return None
+        new_urls = []
+        url = html[0]
+        pageHtml = html[1]
+        #使用正则表达式获取网页中所有的URL链接
+        pattern = re.compile('<a[^>]+href=["\'](.*?)["\']', re.IGNORECASE)
+        urls = pattern.findall(pageHtml)
+        for u in urls:
+            #拼接成完整的URL
+            new_full_url = urlparse.urljoin(url, u)
+            #判断该URL是否符合在config.py中的reURLs配置
+            for k in reURLs.keys():
+                pattern = re.compile(k)
+                if pattern.match(new_full_url) is not None:
+                    print new_full_url
+                    new_urls.append(new_full_url)
+        return new_urls
 
     # 解析HTML获取想要的内容
     def parseContent(self, html):
-        return None
+        #基类中给出最简单的解析方法(不解析)
+        url = html[0]
+        pageHtml = html[1]
+        return [pageHtml] 
 
     # HTML解析线程/进程方法
     def parse(self):
@@ -146,25 +173,25 @@ class Crawler(object):
                 html = self.htmlQueue.get(False)
                 ErrCode = 1
                 #将新的url放入url管理器
-                urls = parseURL(html)
+                urls = self.parseURL(html)
                 ErrCode = 2
-                add_new_urls(urls)
+                self.add_new_urls(urls)
                 ErrCode = 3
                 #将解析的内容放入parseQueue
-                content = parseContent(html)
+                content = self.parseContent(html)
                 ErrCode = 4
                 if content is not None:
                     ErrCode = 5
                     self.parseQueue.put(content)
                     ErrCode = 6
             except Queue.Empty, e:
-                print 'htmlQueue中暂时没有数据'
+                logging.error('htmlQueue中暂时没有数据')
                 time.sleep(1)
             except Exception, e:
-                print '解析网页出现异常, ErrCode=', str(ErrCode), ', 异常信息: ', e.message
+                logging.error('解析网页出现异常, ErrCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
                 time.sleep(1)
             else:
-                print '其他异常'
+                logging.error('解析网页出现其他异常')
                 time.sleep(1)
 
 
@@ -173,6 +200,7 @@ class Crawler(object):
     """""""""""""""""""""""""""""""""""""""""
     # 输出内容
     def outputContent(self, content):
+        #基类中给出默认的输出方法(不输出)
         pass
 
     # 解析内容输出(存储方法)
@@ -182,16 +210,16 @@ class Crawler(object):
                 ErrCode = 0
                 content = self.parseQueue.get(False)
                 ErrCode = 1
-                outputContent(content)
+                self.outputContent(content)
                 ErrCode = 2
             except Queue.Empty, e:
-                print 'parseQueue中暂时没有数据'
+                logging.error('parseQueue中暂时没有数据')
                 time.sleep(1)
             except Exception, e:
-                print '输出内容出现异常, ErrCode=', str(ErrCode), ', 异常信息: ', e.message
+                logging.error('输出内容出现异常, ErrCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
                 time.sleep(1)
             else:
-                print '其他异常'
+                logging.error('输出内容出现其他异常')
                 time.sleep(1)
 
 
@@ -217,3 +245,4 @@ class Crawler(object):
             multi = self.multiKind(target=self.output)
             self.outputList.append(multi)
             multi.start()
+
