@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 实现一个爬虫框架
 * 实现基础的下载器、url管理器、解析器、输出器方法
 * 开发者可以重载这相关方法，个性化自己的爬虫
@@ -9,7 +9,7 @@
 * 下载：下载html页面，放到htmlQueue中
 * 解析：从htmlQueue中取出html页面进行解析，解析的URL放入URL管理器，解析的内容放到parseQueue
 * 输出：从parseQueue中取出解析得到的内容，输出（或者文件，或者数据库，或者其他）
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
+"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 # 引入基础包
 import multiprocessing
@@ -30,12 +30,13 @@ from config import startURL
 
 # 爬虫基类
 class Crawler(object):
-
     def __init__(self):
         self.isClose = False
         #初始化url管理器(集合)
         self.new_urls = set()       #新的还未被爬取的url集合，使用集合进行管理
         self.old_urls = set()       #已经被爬取过的url集合，也是使用集合进行管理
+        #将初始化URL放到new_urls中
+        self.new_urls.add(startURL)
         #多线程/多进程管理列表
         self.downLoadList = []      #下载线程/进程链表
         self.parseList = []         #解析线程/进程链表
@@ -52,6 +53,7 @@ class Crawler(object):
             self.htmlQueue = Queue.Queue()
             self.parseQueue = Queue.Queue()
 
+
     """""""""""""""""""""""""""""""""""""""""
     URL下载相关方法
     """""""""""""""""""""""""""""""""""""""""
@@ -59,18 +61,28 @@ class Crawler(object):
     def download(self):
         while not self.isClose:
             try:
+                ErrCode = 0
                 url = self.get_new_url()
+                ErrCode = 1
                 if url is None:
-                    time.sleep(10)
+                    ErrCode = 2
+                    time.sleep(1)
+                    ErrCode = 3
+                    continue
+                ErrCode = 4
                 #使用urllib2下载url指向的html内容
                 response = urllib2.urlopen(url)
+                ErrCode = 5
                 #如果http的返回码不是200，说明请求下载失败
                 if 200 == response.getcode():
+                    ErrCode = 6
                     html = response.read()
                     #下载到的htlm字符串放入htmlQueue队列
+                    ErrCode = 7
                     self.htmlQueue.put(html)
+                    ErrCode = 8
             except Exception, e:
-                print Exception, ': ', e
+                print '下载网页出现异常，ErrCode=', str(ErrCode), ', 异常信息: ', e.message
 
                 
     """""""""""""""""""""""""""""""""""""""""
@@ -80,12 +92,12 @@ class Crawler(object):
     def add_new_url(self, url):
         if url is None:
             return
-        if (url not in self.new_urls) and (url not in self.old_urls):
-            self.multiLock.acquire()
-            try:
+        self.multiLock.acquire()
+        try:
+            if (url not in self.new_urls) and (url not in self.old_urls):
                 self.new_urls.add(url)
-            finally:
-                self.multiLock.release()
+        finally:
+            self.multiLock.release()
 
     # 添加批量url
     def add_new_urls(self, urls):
@@ -102,7 +114,7 @@ class Crawler(object):
     def get_new_url(self):
         self.multiLock.acquire()
         try:
-            if len(self.new_urls) > 0:
+            if 0 < len(self.new_urls):
                 #pop方法时从集合中获取一个元素，并将其从集合中移除
                 new_url = self.new_urls.pop()
                 self.old_urls.add(new_url)
@@ -112,6 +124,7 @@ class Crawler(object):
         finally:
             self.multiLock.release()
 
+
     """""""""""""""""""""""""""""""""""""""""
     HTML解析相关方法
     """""""""""""""""""""""""""""""""""""""""
@@ -120,10 +133,16 @@ class Crawler(object):
         while not self.isClose:
             try:
                 html = self.htmlQueue.get(False)
+                #将新的url放入url管理器
+
+                #将解析的内容放入parseQueue
+                
                 print html
                 self.parseQueue.put(html)
             except Queue.Empty, e:
-                time.sleep(10)
+                print 'htmlQueue中暂时没有数据'
+                time.sleep(1)
+
 
     """""""""""""""""""""""""""""""""""""""""
     解析内容输出相关方法
@@ -136,7 +155,8 @@ class Crawler(object):
                 print html
             except Queue.Empty, e:
                 print 'parseQueue中暂时没有数据'
-                time.sleep(10)
+                time.sleep(1)
+
 
     """""""""""""""""""""""""""""""""""""""""
     爬虫运行方法
