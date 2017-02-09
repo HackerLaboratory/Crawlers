@@ -7,6 +7,8 @@ Python爬虫框架和使用该框架实现的各种爬虫。对应Python版本�
 * [《Python语言规范》](http://zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_language_rules/)
 * [《Python风格规范》](http://zh-google-styleguide.readthedocs.io/en/latest/google-python-styleguide/python_style_rules/)
 
+扩展阅读：[《高质量的工程代码为什么难写》](http://hellojava.info/?p=508)
+
 ##背景介绍
 
 Python在互联网时代有很多天然的优势：
