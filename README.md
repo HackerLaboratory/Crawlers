@@ -4,7 +4,7 @@ Python爬虫框架和使用该框架实现的各种爬虫。对应Python版本�
 
 ##背景介绍
 
-互联网上存在海量的数据，Python在互联网时代有很多天然的优势：
+Python在互联网时代有很多天然的优势：
 
 * 有诸多Python开发的Web框架：django、flask、web.py等，可以方便的拿来做Web开发
 * Python开发爬虫也有天然的优势，比如自带的urllib、urllib2、htmlparser、re等模块，还有很多的第三方开发包，比如Requests、Beautiful Soup、lxml等，可以很方便的处理HTTP、下载网页、解析网页等
