@@ -1,8 +1,10 @@
+##项目简介
+
+Python爬虫框架和使用该框架实现的各种爬虫。对应Python版本是Python2
+
 ##背景介绍
 
->Python爬虫框架和使用该框架实现的各种爬虫。对应Python版本是Python2
-
-互联网上存在海量的数据，Python再互联网时代有很多天然的优势
+互联网上存在海量的数据，Python在互联网时代有很多天然的优势：
 
 * 有诸多Python开发的Web框架：django、flask、web.py等，可以方便的拿来做Web开发
 * Python开发爬虫也有天然的优势，比如自带的urllib、urllib2、htmlparser、re等模块，还有很多的第三方开发包，比如Requests、Beautiful Soup、lxml等，可以很方便的处理HTTP、下载网页、解析网页等
@@ -21,7 +23,7 @@
 
 开发的过程中必然会遇到各种问题，必须去逐个针对性的解决，这也正是为什么实践是最好的学习方法的原因所在：遇到问题，思考应该用什么知识解决这个问题，再去针对性地学习这方面知识
 
-针对开发过程中遇到的Python方面的问题、对应的解决方法，会在我的个人博客[http://www.xumenger.com/](http://www.xumenger.com/)中对应进行系统化的整理
+针对开发过程中遇到的Python方面的问题、对应的解决方法，会在我的个人博客[http://www.xumenger.com/](http://www.xumenger.com/)中对应进行系统化地整理
 
 ##爬虫架构
 
