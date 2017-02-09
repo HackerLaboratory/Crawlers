@@ -2,13 +2,15 @@
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 实现一个爬虫框架
+* 框架使用Python自带的模块实现而不使用第三方库
 * 实现基础的下载器、url管理器、解析器、输出器方法
 * 开发者可以重载这相关方法，个性化自己的爬虫
 
-有以下三种线程/进程
+有以下四种线程/进程
 * 下载：下载html页面，放到htmlQueue中
 * 解析：从htmlQueue中取出html页面进行解析，解析的URL放入URL管理器，解析的内容放到parseQueue
 * 输出：从parseQueue中取出解析得到的内容，输出（或者文件，或者数据库，或者其他）
+* 一条URL管理线程，主要为了解决多进程无法使用set通信的问题
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
 # 引入基础包
@@ -21,6 +23,7 @@ import re
 import urllib
 import urllib2
 import urlparse
+import HTMLParser
 
 
 # 导入配置文件中的配置信息
@@ -43,7 +46,7 @@ class Crawler(object):
                 datefmt='%a, %d %b %Y %H:%M:%S',
                 filename='log',
                 filemode='w')
-        #初始化url管理器(集合)
+        #初始化url管理器(集合)（多进程的场景下无法使用set跨进程传递，需要结合set和multiprocessing.Queue进行管理）
         self.new_urls = set()       #新的还未被爬取的url集合，使用集合进行管理
         self.old_urls = set()       #已经被爬取过的url集合，也是使用集合进行管理
         self.new_urls.add(startURL) #将初始化URL放到new_urls中
@@ -55,11 +58,15 @@ class Crawler(object):
         if isMultiProcess:
             self.multiKind = multiprocessing.Process
             self.multiLock = multiprocessing.Lock()
+            self.inUrlQueue = multiprocessing.Queue()
+            self.outUrlQueue = multiprocessing.Queue()
             self.htmlQueue = multiprocessing.Queue()
             self.parseQueue = multiprocessing.Queue()
         else:
             self.multiKind = threading.Thread
             self.multiLock = threading.Lock()
+            self.inUrlQueue = Queue.Queue()
+            self.outUrlQueue = Queue.Queue()
             self.htmlQueue = Queue.Queue()
             self.parseQueue = Queue.Queue()
 
@@ -72,7 +79,10 @@ class Crawler(object):
         while not self.isClose:
             try:
                 ErrCode = 0
-                url = self.get_new_url()
+                try:
+                    url = self.outUrlQueue.get(False)
+                except Queue.Empty as e:
+                    continue
                 ErrCode = 1
                 if url is None:
                     ErrCode = 2
@@ -92,13 +102,32 @@ class Crawler(object):
                     html = [url, pageHtml]
                     self.htmlQueue.put(html)
                     ErrCode = 8
-            except Exception, e:
+            except Exception as e:
                 logging.error('下载网页出现异常，ErrCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
 
                 
     """""""""""""""""""""""""""""""""""""""""
     URL管理器相关方法
     """""""""""""""""""""""""""""""""""""""""
+    # URL管理线程方法
+    def manageURL(self):
+        while not isClose:
+            try:
+                #从inURLQueue中取出url放入new url set中，主要判断url是否是新的
+                try
+                    url = self.newUrlQueue.get(False)
+                except Queue.Empty as e:
+                    time.sleep(1)
+                    continue
+                self.add_new_url(url)
+                #从new url set中取出url，放到outUrlQueue
+                url = self.get_new_url()
+                self.outUrlQueue.put(url)
+            except Exception as e:
+                logging.error('管理URL线程出现异常, 异常信息: ' + e.message)
+            else:
+                logging.error('管理URL线程出现异常！')
+
     # 添加一个新的url
     def add_new_url(self, url):
         if url is None:
@@ -175,7 +204,8 @@ class Crawler(object):
                 #将新的url放入url管理器
                 urls = self.parseURL(html)
                 ErrCode = 2
-                self.add_new_urls(urls)
+                for url in urls:
+                    self.inUrlQueue.put(url)
                 ErrCode = 3
                 #将解析的内容放入parseQueue
                 content = self.parseContent(html)
@@ -184,11 +214,11 @@ class Crawler(object):
                     ErrCode = 5
                     self.parseQueue.put(content)
                     ErrCode = 6
-            except Queue.Empty, e:
+            except Queue.Empty as e:
                 logging.error('htmlQueue中暂时没有数据')
                 time.sleep(1)
-            except Exception, e:
-                logging.error('解析网页出现异常, ErrCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
+            except Exception as e:
+                logging.error('解析网页出现异常 as errCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
                 time.sleep(1)
             else:
                 logging.error('解析网页出现其他异常')
@@ -212,11 +242,11 @@ class Crawler(object):
                 ErrCode = 1
                 self.outputContent(content)
                 ErrCode = 2
-            except Queue.Empty, e:
+            except Queue.Empty as e:
                 logging.error('parseQueue中暂时没有数据')
                 time.sleep(1)
-            except Exception, e:
-                logging.error('输出内容出现异常, ErrCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
+            except Exception as e:
+                logging.error('输出内容出现异常 as errCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
                 time.sleep(1)
             else:
                 logging.error('输出内容出现其他异常')
@@ -246,3 +276,6 @@ class Crawler(object):
             self.outputList.append(multi)
             multi.start()
 
+        #启动url管理线程
+        multi = threading.Thread(target = self.manageURL)
+        multi.start()
