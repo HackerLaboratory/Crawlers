@@ -12,7 +12,11 @@ import parser as ps
 import urlmanager as um
 
 """爬虫类
-
+异常处理需要完善
+* 网络异常
+* 配置的url处理类异常
+* 解析异常
+* 存储异常
 """
 class Crawler(object):
 
