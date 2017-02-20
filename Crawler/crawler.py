@@ -1,281 +1,135 @@
 # -*- coding: utf-8 -*-
 
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-实现一个爬虫框架
-* 框架使用Python自带的模块实现而不使用第三方库
-* 实现基础的下载器、url管理器、解析器、输出器方法
-* 开发者可以重载这相关方法，个性化自己的爬虫
-
-有以下四种线程/进程
-* 下载：下载html页面，放到htmlQueue中
-* 解析：从htmlQueue中取出html页面进行解析，解析的URL放入URL管理器，解析的内容放到parseQueue
-* 输出：从parseQueue中取出解析得到的内容，输出（或者文件，或者数据库，或者其他）
-* 一条URL管理线程，主要为了解决多进程无法使用set通信的问题
-"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
-# 引入基础包
 import multiprocessing
 import threading
 import Queue
-import logging
 import time
-import re
-import urllib
-import urllib2
-import urlparse
-import HTMLParser
 
+import config as cfg
+import downloader as dl
+import parser as ps
+import urlmanager as um
+import outputer as op
 
-# 导入配置文件中的配置信息
-from config import isMultiProcess
-from config import downloadCount
-from config import parseCount
-from config import outputCount
-from config import reURLs
-from config import startURL
-
-
-# 爬虫基类
 class Crawler(object):
 
     def __init__(self):
         self.isClose = False
-        #日志配置
-        logging.basicConfig(level=logging.DEBUG,
-                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
-                datefmt='%a, %d %b %Y %H:%M:%S',
-                filename='log',
-                filemode='w')
-        #初始化url管理器(集合)（多进程的场景下无法使用set跨进程传递，需要结合set和multiprocessing.Queue进行管理）
-        self.new_urls = set()       #新的还未被爬取的url集合，使用集合进行管理
-        self.old_urls = set()       #已经被爬取过的url集合，也是使用集合进行管理
-        self.new_urls.add(startURL) #将初始化URL放到new_urls中
-        #多线程/多进程管理列表
-        self.downLoadList = []      #下载线程/进程链表
-        self.parseList = []         #解析线程/进程链表
-        self.outputList = []        #输出线程/进程链表
-        #配置多线程 or 多进程
-        if isMultiProcess:
-            self.multiKind = multiprocessing.Process
-            self.multiLock = multiprocessing.Lock()
-            self.inUrlQueue = multiprocessing.Queue()
-            self.outUrlQueue = multiprocessing.Queue()
-            self.htmlQueue = multiprocessing.Queue()
-            self.parseQueue = multiprocessing.Queue()
+
+        self.downloader = dl.Downloader()
+        self.parser = ps.parser(cfg.reURLs)
+        self.urlmanager = um.UrlManager()
+        self.outputer = ot.Outputer()
+        
+        self.downloaderList = []
+        self.parserList = []
+        self.outputerList = []
+        self.urlmanagerList = []
+        
+        if cfg.isMultiProcess:
+            self.Concurrency = multiprocessing.Process
+            self.Lock = multiprocessing.Lock
+            self.Queue = multiprocessing.Queue
         else:
-            self.multiKind = threading.Thread
-            self.multiLock = threading.Lock()
-            self.inUrlQueue = Queue.Queue()
-            self.outUrlQueue = Queue.Queue()
-            self.htmlQueue = Queue.Queue()
-            self.parseQueue = Queue.Queue()
+            self.Concurrency = threading.Thread
+            self.Lock = threading.Lock
+            self.Queue = Queue.Queue
+
+        self.inUrlQueue = self.Queue()
+        self.outUrlQueue = self.Queue()
+        self.htmlQueue = self.Queue()
+        self.contentQueue = self.Queue()
+        self.inUrlQueue.put(cfg.startURL)
+
+    
+    def run(self):
+        self.Execute()
+
+    
+    def Execute(self):
+        for i in range(cfg.downloadCount):
+            concurrency = self.Concurrency(target = self.download)
+            self.downloaderList.append(concurrency)
+            concurrency.start()
+        for i in range(cfg.parseCount):
+            concurrency = self.Concurrency(target = self.parse)
+            self.parserList.append(concurrency)
+            concurrency.start()
+        for i in range(cfg.outputCount):
+            concurrency = self.Concurrency(target = self.output)
+            self.outputerList.append(concurrency)
+            concurrency.start()
+        for i in range(1):
+            concurrency = threading.Thread(target = self.urlmanage)
+            self.urlmanagerList.append(concurrency)
+            concurrency.start()
 
 
-    """""""""""""""""""""""""""""""""""""""""
-    URL下载相关方法
-    """""""""""""""""""""""""""""""""""""""""
-    # URL下载线程/进程方法
+    def urlmanage(self):
+        while not self.isClose:
+            outUrl = self.urlmanager.get_new_url()
+            if outUrl is not None:
+                self.outUrlQueue.put(outUrl)
+            try:
+                inUrl = self.inUrlQueue.get(False)
+            except Queue.Empty as e:
+                time.sleep(1)
+                continue
+            self.urlmanager.add_new_url(inUrl)
+
+
     def download(self):
         while not self.isClose:
             try:
-                ErrCode = 0
                 try:
                     url = self.outUrlQueue.get(False)
                 except Queue.Empty as e:
                     continue
-                ErrCode = 1
-                if url is None:
-                    ErrCode = 2
-                    time.sleep(1)
-                    ErrCode = 3
-                    continue
-                ErrCode = 4
-                #使用urllib2下载url指向的html内容
-                response = urllib2.urlopen(url)
-                ErrCode = 5
-                #如果http的返回码不是200，说明请求下载失败
-                if 200 == response.getcode():
-                    ErrCode = 6
-                    pageHtml = response.read()
-                    #下载到的htlm字符串放入htmlQueue队列
-                    ErrCode = 7
-                    html = [url, pageHtml]
-                    self.htmlQueue.put(html)
-                    ErrCode = 8
+                if url is not None:
+                    html = self.downloader.download(url)
+                    urlHtml = [url, html]
+                    self.htmlQueue.put(urlHtml)
             except Exception as e:
-                logging.error('下载网页出现异常，ErrCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
-
-                
-    """""""""""""""""""""""""""""""""""""""""
-    URL管理器相关方法
-    """""""""""""""""""""""""""""""""""""""""
-    # URL管理线程方法
-    def manageURL(self):
-        while not isClose:
-            try:
-                #从inURLQueue中取出url放入new url set中，主要判断url是否是新的
-                try
-                    url = self.newUrlQueue.get(False)
-                except Queue.Empty as e:
-                    time.sleep(1)
-                    continue
-                self.add_new_url(url)
-                #从new url set中取出url，放到outUrlQueue
-                url = self.get_new_url()
-                self.outUrlQueue.put(url)
-            except Exception as e:
-                logging.error('管理URL线程出现异常, 异常信息: ' + e.message)
-            else:
-                logging.error('管理URL线程出现异常！')
-
-    # 添加一个新的url
-    def add_new_url(self, url):
-        if url is None:
-            return
-        self.multiLock.acquire()
-        try:
-            if (url not in self.new_urls) and (url not in self.old_urls):
-                self.new_urls.add(url)
-        finally:
-            self.multiLock.release()
-
-    # 添加批量url
-    def add_new_urls(self, urls):
-        if (urls is None) or (0 == len(urls)):
-            return
-        for url in urls:
-            self.add_new_url(url)
-
-    # 判断是否还有未爬取的url
-    def has_new_url(self):
-        return (0 != len(self.new_urls))
-
-    # 获取一个新的待爬取的url
-    def get_new_url(self):
-        self.multiLock.acquire()
-        try:
-            if 0 < len(self.new_urls):
-                #pop方法时从集合中获取一个元素，并将其从集合中移除
-                new_url = self.new_urls.pop()
-                self.old_urls.add(new_url)
-                return new_url
-            else:
-                return None
-        finally:
-            self.multiLock.release()
+                print "下载异常", e.message
 
 
-    """""""""""""""""""""""""""""""""""""""""
-    HTML解析相关方法
-    """""""""""""""""""""""""""""""""""""""""
-    # 解析HTML获取其中的URL
-    def parseURL(self, html):
-        new_urls = []
-        url = html[0]
-        pageHtml = html[1]
-        #使用正则表达式获取网页中所有的URL链接
-        pattern = re.compile('<a[^>]+href=["\'](.*?)["\']', re.IGNORECASE)
-        urls = pattern.findall(pageHtml)
-        for u in urls:
-            #拼接成完整的URL
-            new_full_url = urlparse.urljoin(url, u)
-            #判断该URL是否符合在config.py中的reURLs配置
-            for k in reURLs.keys():
-                pattern = re.compile(k)
-                if pattern.match(new_full_url) is not None:
-                    print new_full_url
-                    new_urls.append(new_full_url)
-        return new_urls
-
-    # 解析HTML获取想要的内容
-    def parseContent(self, html):
-        #基类中给出最简单的解析方法(不解析)
-        url = html[0]
-        pageHtml = html[1]
-        return [pageHtml] 
-
-    # HTML解析线程/进程方法
     def parse(self):
         while not self.isClose:
             try:
-                ErrCode = 0
-                html = self.htmlQueue.get(False)
-                ErrCode = 1
-                #将新的url放入url管理器
-                urls = self.parseURL(html)
-                ErrCode = 2
-                for url in urls:
-                    self.inUrlQueue.put(url)
-                ErrCode = 3
-                #将解析的内容放入parseQueue
-                content = self.parseContent(html)
-                ErrCode = 4
+                try:
+                    urlHtml = self.htmlQueue.get(False)
+                except Queue.Empty as e:
+                    time.sleep(1)
+                    continue
+                url = urlHtml[0]
+                html = urlHtml[1]
+                #解析HTML获取URL
+                new_urls = self.parser.parseURL(html)
+                if (new_urls is not None) and (0 < len(new_urls)):
+                    for new_url in new_urls:
+                        self.inUrlQueue.put(new_url)
+                #根据URL找到对应的处理类，然后调用解析方法
+                #??!!
+                content = Parse(html)
                 if content is not None:
-                    ErrCode = 5
-                    self.parseQueue.put(content)
-                    ErrCode = 6
-            except Queue.Empty as e:
-                logging.error('htmlQueue中暂时没有数据')
-                time.sleep(1)
+                    urlContent = [url, content]
+                    contentQueue.put(urlContent)
             except Exception as e:
-                logging.error('解析网页出现异常 as errCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
-                time.sleep(1)
-            else:
-                logging.error('解析网页出现其他异常')
-                time.sleep(1)
+                print "解析异常", e.message
 
 
-    """""""""""""""""""""""""""""""""""""""""
-    解析内容输出相关方法
-    """""""""""""""""""""""""""""""""""""""""
-    # 输出内容
-    def outputContent(self, content):
-        #基类中给出默认的输出方法(不输出)
-        pass
-
-    # 解析内容输出(存储方法)
     def output(self):
         while not self.isClose:
             try:
-                ErrCode = 0
-                content = self.parseQueue.get(False)
-                ErrCode = 1
-                self.outputContent(content)
-                ErrCode = 2
-            except Queue.Empty as e:
-                logging.error('parseQueue中暂时没有数据')
-                time.sleep(1)
+                try:
+                    urlContent = self.contentQueue.get(False)
+                except Queue.Empty as e:
+                    time.sleep(1)
+                    continue
+                url = urlContent[0]
+                content = urlContent[1]
+                #根据URL找到对应的处理类，然后调用输出方法
+                #???!!
+                Output(content)
             except Exception as e:
-                logging.error('输出内容出现异常 as errCode=' + str(ErrCode) + ', 异常信息: ' + e.message)
-                time.sleep(1)
-            else:
-                logging.error('输出内容出现其他异常')
-                time.sleep(1)
-
-
-    """""""""""""""""""""""""""""""""""""""""
-    爬虫运行方法
-    """""""""""""""""""""""""""""""""""""""""
-    # 按照配置的线程/进程、按照实现的方法运行爬虫
-    def Execute(self):
-        #按照配置启动n个下载线程/进程
-        for i in range(downloadCount):
-            multi = self.multiKind(target=self.download)
-            self.downLoadList.append(multi)
-            multi.start()
-
-        #按照配置启动n个解析线程/进程
-        for i in range(parseCount):
-            multi = self.multiKind(target=self.parse)
-            self.parseList.append(multi)
-            multi.start()
-
-        #按照配置启动n个输出线程/进程
-        for i in range(outputCount):
-            multi = self.multiKind(target=self.output)
-            self.outputList.append(multi)
-            multi.start()
-
-        #启动url管理线程
-        multi = threading.Thread(target = self.manageURL)
-        multi.start()
+                print "输出异常", e.message
