@@ -4,25 +4,25 @@ import multiprocessing
 import threading
 import Queue
 import time
+import re
 
 import config as cfg
 import downloader as dl
 import parser as ps
 import urlmanager as um
-import outputer as op
 
 """爬虫类
 
 """
 class Crawler(object):
 
-    def __init__(self):
+    def __init__(self, glbl):
+        self.glbl = glbl
         self.isClose = False
 
         self.downloader = dl.Downloader()
-        self.parser = ps.parser(cfg.reURLs)
+        self.parser = ps.Parser(cfg.reURLs)
         self.urlmanager = um.UrlManager()
-        self.outputer = ot.Outputer()
         
         self.downloaderList = []
         self.parserList = []
@@ -93,7 +93,7 @@ class Crawler(object):
                     urlHtml = [url, html]
                     self.htmlQueue.put(urlHtml)
             except Exception as e:
-                print "下载异常", e.message
+                print "download error: ", e.message
 
 
     def parse(self):
@@ -112,13 +112,18 @@ class Crawler(object):
                     for new_url in new_urls:
                         self.inUrlQueue.put(new_url)
                 #根据URL找到对应的处理类，然后调用解析方法
-                #??!!
-                content = Parse(html)
-                if content is not None:
-                    urlContent = [url, content]
-                    contentQueue.put(urlContent)
+                for k in cfg.reURLs.keys():
+                    pattern = re.compile(k)
+                    if pattern.match(url):
+                        #找到对应的URL处理类
+                        dealURL = self.glbl[cfg.reURLs[k]]
+                        dealurl = dealURL()
+                        content = dealurl.Parse(html)
+                        if content is not None:
+                            urlContent = [url, content]
+                            contentQueue.put(urlContent)
             except Exception as e:
-                print "解析异常", e.message
+                print "parse error: ", e.message
 
 
     def output(self):
@@ -132,9 +137,14 @@ class Crawler(object):
                 url = urlContent[0]
                 content = urlContent[1]
                 #根据URL找到对应的处理类，然后调用输出方法
-                #???!!
-                Output(content)
+                for k in cfg.reURLs.keys():
+                    pattern = re.compile(k)
+                    if pattern.match(url):
+                        #找到对应的URL处理类
+                        dealURL = self.glbl[cfg.reURLs[k]]
+                        dealurl = dealURL()
+                        dealurl.Output(content)
             except Exception as e:
-                print "输出异常", e.message
+                print "output error: ", e.message
 
 

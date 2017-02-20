@@ -13,8 +13,8 @@ parseCount = 2
 outputCount = 3
 
 #匹配的URL正则表达式
-reURLs = {'http://www.xumenger.com/.*/': 'crawler1', 
-          'http://www.xumenger.com/page.*': 'crawler2'}
+reURLs = {'http://www.xumenger.com/.*/': 'xumenger', 
+          'http://www.xumenger.com/page.*': 'page'}
 
 #开始爬取的URL
 startURL = 'http://www.xumenger.com'

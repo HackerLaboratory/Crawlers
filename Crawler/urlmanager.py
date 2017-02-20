@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """url管理器
-
+* 用于管理未处理、已经处理的URL
+* URL管理类是非线程安全的
 """
 class UrlManager(object):
 

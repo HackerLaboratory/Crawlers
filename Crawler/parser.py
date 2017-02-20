@@ -14,6 +14,7 @@ class Parser(object):
     def parseURL(self, urlHtml):
         new_urls = []
         url = urlHtml[0]
+        print 'parse: ', url
         html = urlHtml[1]
         #使用正则表达式获取网页中所有URL链接
         pattern = re.compile('<a[^>]+href=["\'](.*?)["\']', re.IGNORECASE)
@@ -28,5 +29,4 @@ class Parser(object):
                     print full_url
                     new_urls.append(full_url)
         return new_urls
-
 
