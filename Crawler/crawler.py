@@ -17,6 +17,10 @@ import urlmanager as um
 * 配置的url处理类异常
 * 解析异常
 * 存储异常
+
+逻辑完善
+* 线程/进程合理退出
+* 进程间数据传递
 """
 class Crawler(object):
 
