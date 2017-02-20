@@ -1,9 +1,8 @@
--*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+
+"""url管理器
 
 """
-url管理器
-"""
-
 class UrlManager(object):
 
     def __init__(self):

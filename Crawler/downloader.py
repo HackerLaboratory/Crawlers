@@ -1,13 +1,11 @@
--*- coding: utf-8 -*-
-
-"""
-下载器
-"""
+# -*- coding: utf-8 -*-
 
 import urllib
 import urllib2
-import logging
 
+"""下载器
+
+"""
 class Downloader(object):
     
     def __init__(self):

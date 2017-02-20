@@ -1,9 +1,8 @@
--*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
+
+"""输出器
 
 """
-输出器
-"""
-
 class Outputer(object):
 
     def __init__(self):

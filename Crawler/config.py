@@ -18,3 +18,4 @@ reURLs = {'http://www.xumenger.com/.*/': 'crawler1',
 
 #开始爬取的URL
 startURL = 'http://www.xumenger.com'
+

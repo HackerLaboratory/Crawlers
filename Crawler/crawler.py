@@ -11,6 +11,9 @@ import parser as ps
 import urlmanager as um
 import outputer as op
 
+"""爬虫类
+
+"""
 class Crawler(object):
 
     def __init__(self):
@@ -104,7 +107,7 @@ class Crawler(object):
                 url = urlHtml[0]
                 html = urlHtml[1]
                 #解析HTML获取URL
-                new_urls = self.parser.parseURL(html)
+                new_urls = self.parser.parseURL(urlHtml)
                 if (new_urls is not None) and (0 < len(new_urls)):
                     for new_url in new_urls:
                         self.inUrlQueue.put(new_url)
@@ -133,3 +136,5 @@ class Crawler(object):
                 Output(content)
             except Exception as e:
                 print "输出异常", e.message
+
+
