@@ -65,12 +65,15 @@ class Crawler(object):
     
 
     def suspendResume(self, signum, frame):
-        print 'Ctrl-C suspend/resume'
+        if self.isSuspend:
+            print '恢复爬虫'
+        if not self.isSuspend:
+            print '暂停爬虫'
         self.isSuspend = not self.isSuspend
 
 
     def stop(self, signum, frame):
-        print 'Ctrl-Z stop'
+        print '强制终止爬虫'
         self.isStop = True
 
     
