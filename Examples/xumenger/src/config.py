@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 #多线程 or 多进程
-isMultiProcess = True
+isMultiProcess = False
 
 #下载线程/进程个数
 downloadCount = 3
@@ -17,5 +17,5 @@ reURLs = {'http://www.xumenger.com/.*/': 'xumenger',
           'http://www.xumenger.com/page.*': 'page'}
 
 #开始爬取的URL
-startURL = 'http://www.xumenger.com'
+startURLs = ['http://www.xumenger.com']
 

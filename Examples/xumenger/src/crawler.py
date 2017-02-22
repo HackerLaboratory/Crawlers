@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import signal
 import multiprocessing
 import threading
 import Queue
@@ -21,12 +22,20 @@ import urlmanager as um
 逻辑完善
 * 线程/进程合理退出
 * 进程间数据传递
+
+暂停、恢复、停止的信息怎么发送给其他进程/线程
+新增一个监控线程可以专门用于监控和控制其他线程/进程？
 """
 class Crawler(object):
 
     def __init__(self, glbl):
         self.glbl = glbl
-        self.isClose = False
+        self.isSuspend = False
+        self.isStop = False
+
+        #注册信号，通过信号来控制爬虫的暂停、恢复、停止
+        signal.signal(signal.SIGINT, self.suspendResume)
+        signal.signal(signal.SIGTSTP, self.stop)
 
         self.downloader = dl.Downloader()
         self.parser = ps.Parser(cfg.reURLs)
@@ -36,6 +45,7 @@ class Crawler(object):
         self.parserList = []
         self.outputerList = []
         self.urlmanagerList = []
+        self.monitorList = []
         
         if cfg.isMultiProcess:
             self.Concurrency = multiprocessing.Process
@@ -50,7 +60,18 @@ class Crawler(object):
         self.outUrlQueue = self.Queue()
         self.htmlQueue = self.Queue()
         self.contentQueue = self.Queue()
-        self.inUrlQueue.put(cfg.startURL)
+        for url in cfg.startURLs:
+            self.inUrlQueue.put(url)
+    
+
+    def suspendResume(self, signum, frame):
+        print 'Ctrl-C suspend/resume'
+        self.isSuspend = not self.isSuspend
+
+
+    def stop(self, signum, frame):
+        print 'Ctrl-Z stop'
+        self.isStop = True
 
     
     def run(self):
@@ -74,10 +95,18 @@ class Crawler(object):
             concurrency = threading.Thread(target = self.urlmanage)
             self.urlmanagerList.append(concurrency)
             concurrency.start()
+        for i in range(1):
+            concurrency = threading.Thread(target = self.monitor)
+            self.monitorList.append(concurrency)
+            concurrency.start()
+
+    
+    def monitor(self):
+        pass
 
 
     def urlmanage(self):
-        while not self.isClose:
+        while not self.isStop:
             outUrl = self.urlmanager.get_new_url()
             if outUrl is not None:
                 self.outUrlQueue.put(outUrl)
@@ -90,7 +119,7 @@ class Crawler(object):
 
 
     def download(self):
-        while not self.isClose:
+        while not self.isStop:
             try:
                 try:
                     url = self.outUrlQueue.get(False)
@@ -98,14 +127,15 @@ class Crawler(object):
                     continue
                 if url is not None:
                     html = self.downloader.download(url)
-                    urlHtml = [url, html]
-                    self.htmlQueue.put(urlHtml)
+                    if html is not None:
+                        urlHtml = [url, html]
+                        self.htmlQueue.put(urlHtml)
             except Exception as e:
                 print "download error: ", e.message
 
 
     def parse(self):
-        while not self.isClose:
+        while not self.isStop:
             try:
                 try:
                     urlHtml = self.htmlQueue.get(False)
@@ -129,13 +159,13 @@ class Crawler(object):
                         content = dealurl.Parse(html)
                         if content is not None:
                             urlContent = [url, content]
-                            contentQueue.put(urlContent)
+                            self.contentQueue.put(urlContent)
             except Exception as e:
-                print "parse error: ", e.message
+                print "parse error: ", err, e.message
 
 
     def output(self):
-        while not self.isClose:
+        while not self.isStop:
             try:
                 try:
                     urlContent = self.contentQueue.get(False)
