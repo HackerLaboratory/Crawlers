@@ -17,5 +17,5 @@ reURLs = {'http://www.xumenger.com/.*/': 'xumenger',
           'http://www.xumenger.com/page.*': 'page'}
 
 #开始爬取的URL，支持配置多个URL，可用于同时抓取多个网站
-startURLs = ['http://www.xumenger.com']
+startURLs = ['http://www.xumenger.com', ]
 
