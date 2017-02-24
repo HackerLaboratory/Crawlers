@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import os
 import signal
 import multiprocessing
 import threading
@@ -22,9 +23,6 @@ import urlmanager as um
 逻辑完善
 * 线程/进程合理退出
 * 进程间数据传递
-
-暂停、恢复、停止的信息怎么发送给其他进程/线程
-新增一个监控线程可以专门用于监控和控制其他线程/进程？
 """
 class Crawler(object):
 
@@ -66,14 +64,14 @@ class Crawler(object):
 
     def suspendResume(self, signum, frame):
         if self.isSuspend:
-            print '恢复爬虫'
+            print os.getpid(), '进程收到Ctrl-C信号，将会恢复爬虫'
         if not self.isSuspend:
-            print '暂停爬虫'
+            print os.getpid(), '进程收到Ctrl-C信号，将会暂停爬虫'
         self.isSuspend = not self.isSuspend
 
 
     def stop(self, signum, frame):
-        print '强制终止爬虫'
+        print os.getpid(), '进程收到Ctrl-Z信号，将会强制终止爬虫'
         self.isStop = True
 
     
@@ -95,17 +93,17 @@ class Crawler(object):
             self.outputerList.append(concurrency)
             concurrency.start()
         for i in range(1):
-            concurrency = threading.Thread(target = self.urlmanage)
-            self.urlmanagerList.append(concurrency)
-            concurrency.start()
-        for i in range(1):
-            concurrency = threading.Thread(target = self.monitor)
-            self.monitorList.append(concurrency)
-            concurrency.start()
+            thread = threading.Thread(target = self.urlmanage)
+            self.urlmanagerList.append(thread)
+            thread.start()
+        #主线程自己作为监控线程，循环运行以监视其他线程/进程
+        self.monitor()
 
     
     def monitor(self):
-        pass
+        while not self.isStop:
+            time.sleep(1)
+        print '监控循环结束'
 
 
     def urlmanage(self):
@@ -119,6 +117,7 @@ class Crawler(object):
                 time.sleep(1)
                 continue
             self.urlmanager.add_new_url(inUrl)
+        print 'urlmanager stop!'
 
 
     def download(self):
@@ -135,6 +134,7 @@ class Crawler(object):
                         self.htmlQueue.put(urlHtml)
             except Exception as e:
                 print "download error: ", e.message
+        print 'downloader stop!'
 
 
     def parse(self):
@@ -165,6 +165,7 @@ class Crawler(object):
                             self.contentQueue.put(urlContent)
             except Exception as e:
                 print "parse error: ", err, e.message
+        print 'parser stop!'
 
 
     def output(self):
@@ -187,5 +188,5 @@ class Crawler(object):
                         dealurl.Output(content)
             except Exception as e:
                 print "output error: ", e.message
-
+        print 'outputer stop!'
 

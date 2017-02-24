@@ -48,14 +48,16 @@ class page(object):
         pass
 
 
+#需要控制，假如这里运行完成就相当于主进程的主线程运行完，自动死掉，那么就无法去处理信号了
+#这个问题需要解决，如何让主进程的主线程不死掉！
+
+#对于这个xumenger爬虫，因为要在result这个dict中处理数据，所以需要配置为单进程多线程的爬虫！
+#不能配置为多进程的爬虫
+
 if __name__ == '__main__':
+    #爬虫run()之后，主线程也会进入循环，直到等待Ctrl-Z消息
     craw.run()
     
-    times = 1800
-    while times > 0:
-        time.sleep(1)
-        times = times - 1
-
     lock.acquire()
     try:
         #按值对字典排序
