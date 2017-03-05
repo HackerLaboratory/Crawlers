@@ -36,7 +36,7 @@ class Crawler(object):
         signal.signal(signal.SIGTSTP, self.stop)
 
         self.downloader = dl.Downloader()
-        self.parser = ps.Parser(cfg.reURLs)
+        self.parser = ps.Parser(cfg.reURLs, cfg.exceptURLs)
         self.urlmanager = um.UrlManager()
         
         self.downloaderList = []
@@ -164,7 +164,7 @@ class Crawler(object):
                             urlContent = [url, content]
                             self.contentQueue.put(urlContent)
             except Exception as e:
-                print "parse error: ", err, e.message
+                print "parse error: ", e.message
         print 'parser stop!'
 
 

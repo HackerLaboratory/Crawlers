@@ -5,6 +5,7 @@ import re
 import threading
 import time
 import matplotlib.pyplot as plt
+import numpy as np
 
 craw = crawler.Crawler(globals())
 lock = threading.Lock()
@@ -70,3 +71,30 @@ if __name__ == '__main__':
    
     for tag in tagsort:
         print tag[0], ':', tag[1]
+
+    ttagname = []
+    tcount = []
+    for tag in tagsort:
+        tmp = unicode(tag[0], 'utf-8')
+        ttagname.append(tmp)
+        tcount.append(tag[1])
+
+    tagname = tuple(ttagname)
+    count = tuple(tcount)
+    
+    n_groups = 10
+    fig, ax = plt.subplots()
+    index = np.arange(n_groups)
+    bar_width = 0.35
+    opacity = 0.4
+    rects1 = plt.bar(index, count, alpha=opacity, color='r', label='Tag')
+
+    plt.xlabel('Count')
+    plt.ylabel('Tag')
+    plt.title('xumenger\'s tag message')
+    plt.xticks(index+bar_width, tagname)
+    plt.ylim(0, 200)
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
