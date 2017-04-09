@@ -7,11 +7,9 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
-
 craw = crawler.Crawler(globals())
 lock = threading.Lock()
 result = {}
-
 
 """develop information:
     1. developer need to develop Parse、Output function
@@ -26,7 +24,6 @@ result = {}
         Returns:
             pass
 """
-
 
 class xumenger(object):
     """xumenger class
@@ -64,7 +61,6 @@ class xumenger(object):
             finally:
                 lock.release()
 
-
 class page(object):
     """page class use to deal www.xumenger.com/page.*
     
@@ -78,8 +74,6 @@ class page(object):
     def Output(self, content):
         pass
 
-
-
 """craw www.xumenger.com
 use matplotlib to draw tag's distribution
 because of using dict to manage output content, so xumenger have to config as multithreading
@@ -87,14 +81,12 @@ because of using dict to manage output content, so xumenger have to config as mu
 if __name__ == '__main__':
     # craw start
     craw.run()
-    
     # craw stop, deal result
     lock.acquire()
     try:
         # sort according dict
         tagDict = sorted(result.iteritems(), key=lambda d:d[1], reverse=True)
         tagList = []
-
         # in case sort's cout less than 10
         dictSize = 0;
         if len(tagDict) > 10:
@@ -105,7 +97,6 @@ if __name__ == '__main__':
             tagList.append(tagDict[i])     
     finally:
         lock.release()
-   
     # output tag's name and tag's count
     for tag in tagList:
         print tag[0], ':', tag[1]
@@ -116,10 +107,8 @@ if __name__ == '__main__':
         tmp = unicode(tag[0], 'utf-8')
         tagName.append(tmp)
         tagCount.append(tag[1])
-
     name = tuple(tagName)
     count = tuple(tagCount)
-    
     # use matplotlib to draw tag distribution
     groupCount = 10
     fig, ax = plt.subplots()
@@ -127,14 +116,14 @@ if __name__ == '__main__':
     barWidth = 0.35
     opacity = 0.4
     rects = plt.bar(index, count, alpha = opacity, color = 'r', label = 'Tag')
-
+    # draw x, y label
     plt.xlabel('Tag')
     plt.ylabel('Count')
     plt.title('xumenger\'s tag message')
     plt.xticks(index + barWidth, name)
     plt.ylim(0, 200)
     plt.legend()
-
+    # show
     plt.tight_layout()
     plt.show()
 
