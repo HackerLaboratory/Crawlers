@@ -36,7 +36,7 @@ class Crawler(object):
         signal.signal(signal.SIGTSTP, self.stop)
 
         self.downloader = dl.Downloader()
-        self.parser = ps.Parser(cfg.urlREs, cfg.exceptURLs)
+        self.parser = ps.Parser(cfg.urlREs, cfg.exceptUrlREs)
         self.urlmanager = um.UrlManager()
         
         self.downloaderList = []
@@ -58,7 +58,7 @@ class Crawler(object):
         self.outUrlQueue = self.Queue()
         self.htmlQueue = self.Queue()
         self.contentQueue = self.Queue()
-        for url in cfg.startURLs:
+        for url in cfg.startUrls:
             self.inUrlQueue.put(url)
     
 
@@ -128,7 +128,7 @@ class Crawler(object):
                 except Queue.Empty as e:
                     continue
                 if url is not None:
-                    html = self.downloader.download(url)
+                    html = self.downloader.download(url, cfg.downloadTimeout)
                     if html is not None:
                         urlHtml = [url, html]
                         self.htmlQueue.put(urlHtml)
