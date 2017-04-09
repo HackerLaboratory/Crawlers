@@ -1,21 +1,46 @@
 # -*- coding: utf-8 -*-
 
-#多线程 or 多进程
-isMultiProcess = True
+"""thread or process
+True: multi threading
+False: multi processing
+"""
+isMultiProcess = False
 
-#下载线程/进程个数
-downloadCount = 3
+"""downloader count
+downloader is thread or process
+"""
+downloaderCount = 1
 
-#解析线程/进程个数
-parseCount = 2
+"""timeout when download url
+"""
+downloadTimeout = 20
 
-#数据存储进程/线程个数
-outputCount = 3
+"""parser count
+parser is thread or process
+"""
+parserCount = 1
 
-#匹配的URL正则表达式
-reURLs = {'http://www.xumenger.com/.*/': 'xumenger', 
+"""outputer count
+outputer is thread or process
+"""
+outputerCount = 1
+
+"""URL regular expression
+config URL regular expression and it's deal class name
+"""
+urlREs = {'http://www.xumenger.com/.*/': 'xumenger', 
           'http://www.xumenger.com/page.*': 'page'}
 
-#开始爬取的URL
-startURL = 'http://www.xumenger.com'
+"""start URL
+config one or more StartURL
+"""
+startUrls = ['http://www.xumenger.com', ]
 
+"""except URL regular expression
+when a crawler craw url/html, it will parse many urls
+this config item used to all URLs that are not have to dealed
+"""
+exceptUrlREs = ['http://www.xumenger.com/tags.*',
+              'http://www.xumenger.com/categories.*',
+              'http://www.xumenger.com/download/.*',
+              'http://www.xumenger.com/media/.*']
