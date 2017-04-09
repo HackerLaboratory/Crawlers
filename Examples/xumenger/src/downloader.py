@@ -25,10 +25,8 @@ class Downloader(object):
         Raises:
             download exception
         """
-
         if url is None:
             return None
-
         try:
             headers = {'User-Agent': 'Chrome/23.0.1271.64',
                       'Accept': 'text/html;q=0.9,*/*;q=0.8',

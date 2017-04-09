@@ -7,18 +7,40 @@ import time
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 craw = crawler.Crawler(globals())
 lock = threading.Lock()
 result = {}
 
-#要求实现的url处理类必须是并发安全的！
 
-#xumenger类用来解析获取每篇文章的tag
-class xumenger(object):    
+"""develop information:
+    1. developer need to develop Parse、Output function
+    2. Parse
+        Args:
+            html page string
+        Returns:
+            any kinds of content
+    3. Output
+        Args:
+            content
+        Returns:
+            pass
+"""
+
+
+class xumenger(object):
+    """xumenger class
+    to craw www.xumenger.com to get tag information
+    """
+
     def __init__(self):
+        """xumenger constructor
+        """
         self.pattern = re.compile(r'<a href="/tags/#(.*?)" title=.*?>')
 
     def Parse(self, html):
+        """parse www.xumenger.com to get content
+        """
         content = []
         tags = self.pattern.findall(html, re.S|re.M)
         if tags is not None:
@@ -27,6 +49,8 @@ class xumenger(object):
         return content
 
     def Output(self, content):
+        """output content
+        """
         global lock
         global result
         for tag in content:
@@ -40,8 +64,14 @@ class xumenger(object):
             finally:
                 lock.release()
 
-#page类不做解析，只是为了遍历所有URL
+
 class page(object):
+    """page class use to deal www.xumenger.com/page.*
+    
+    it does not have to parse and output content
+    just for get more urls
+    """
+
     def Parse(self, html):
         return None
 
@@ -49,52 +79,62 @@ class page(object):
         pass
 
 
-#需要控制，假如这里运行完成就相当于主进程的主线程运行完，自动死掉，那么就无法去处理信号了
-#这个问题需要解决，如何让主进程的主线程不死掉！
 
-#对于这个xumenger爬虫，因为要在result这个dict中处理数据，所以需要配置为单进程多线程的爬虫！
-#不能配置为多进程的爬虫
-
+"""craw www.xumenger.com
+use matplotlib to draw tag's distribution
+because of using dict to manage output content, so xumenger have to config as multithreading
+"""
 if __name__ == '__main__':
-    #爬虫run()之后，主线程也会进入循环，直到等待Ctrl-Z消息
+    # craw start
     craw.run()
     
+    # craw stop, deal result
     lock.acquire()
     try:
-        #按值对字典排序
-        sort = sorted(result.iteritems(), key=lambda d:d[1], reverse=True)
-        tagsort = []
-        for i in range(10):
-            tagsort.append(sort[i])     
+        # sort according dict
+        tagDict = sorted(result.iteritems(), key=lambda d:d[1], reverse=True)
+        tagList = []
+
+        # in case sort's cout less than 10
+        dictSize = 0;
+        if len(tagDict) > 10:
+            dictSize = 10
+        else:
+            dictSize = len(tagDict)
+        for i in range(dictSize):
+            tagList.append(tagDict[i])     
     finally:
         lock.release()
    
-    for tag in tagsort:
+    # output tag's name and tag's count
+    for tag in tagList:
         print tag[0], ':', tag[1]
 
-    ttagname = []
-    tcount = []
-    for tag in tagsort:
+    tagName = []
+    tagCount = []
+    for tag in tagList:
         tmp = unicode(tag[0], 'utf-8')
-        ttagname.append(tmp)
-        tcount.append(tag[1])
+        tagName.append(tmp)
+        tagCount.append(tag[1])
 
-    tagname = tuple(ttagname)
-    count = tuple(tcount)
+    name = tuple(tagName)
+    count = tuple(tagCount)
     
-    n_groups = 10
+    # use matplotlib to draw tag distribution
+    groupCount = 10
     fig, ax = plt.subplots()
-    index = np.arange(n_groups)
-    bar_width = 0.35
+    index = np.arange(groupCount)
+    barWidth = 0.35
     opacity = 0.4
-    rects1 = plt.bar(index, count, alpha=opacity, color='r', label='Tag')
+    rects = plt.bar(index, count, alpha = opacity, color = 'r', label = 'Tag')
 
     plt.xlabel('Tag')
     plt.ylabel('Count')
     plt.title('xumenger\'s tag message')
-    plt.xticks(index+bar_width, tagname)
+    plt.xticks(index + barWidth, name)
     plt.ylim(0, 200)
     plt.legend()
 
     plt.tight_layout()
     plt.show()
+
