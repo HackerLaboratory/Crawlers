@@ -89,8 +89,8 @@ if __name__ == '__main__':
     opacity = 0.4
     rects1 = plt.bar(index, count, alpha=opacity, color='r', label='Tag')
 
-    plt.xlabel('Count')
-    plt.ylabel('Tag')
+    plt.xlabel('Tag')
+    plt.ylabel('Count')
     plt.title('xumenger\'s tag message')
     plt.xticks(index+bar_width, tagname)
     plt.ylim(0, 200)

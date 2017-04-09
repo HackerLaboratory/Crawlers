@@ -30,7 +30,7 @@ class Parser(object):
             #拼接成完整的URL
             full_url = urlparse.urljoin(url, u)
             #判断该URL是否在exceptURLs中的配合，需过滤
-            if not self.isExceptURL(url):
+            if not self.isExceptURL(full_url):
                 #判断该URL是否符合在config.py中的reURLs配置
                 for k in self.reURLs.keys():
                     pattern = re.compile(k)

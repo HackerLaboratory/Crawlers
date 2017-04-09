@@ -36,7 +36,7 @@ class Crawler(object):
         signal.signal(signal.SIGTSTP, self.stop)
 
         self.downloader = dl.Downloader()
-        self.parser = ps.Parser(cfg.reURLs, cfg.exceptURLs)
+        self.parser = ps.Parser(cfg.urlREs, cfg.exceptURLs)
         self.urlmanager = um.UrlManager()
         
         self.downloaderList = []
@@ -80,15 +80,15 @@ class Crawler(object):
 
     
     def Execute(self):
-        for i in range(cfg.downloadCount):
+        for i in range(cfg.downloaderCount):
             concurrency = self.Concurrency(target = self.download)
             self.downloaderList.append(concurrency)
             concurrency.start()
-        for i in range(cfg.parseCount):
+        for i in range(cfg.parserCount):
             concurrency = self.Concurrency(target = self.parse)
             self.parserList.append(concurrency)
             concurrency.start()
-        for i in range(cfg.outputCount):
+        for i in range(cfg.outputerCount):
             concurrency = self.Concurrency(target = self.output)
             self.outputerList.append(concurrency)
             concurrency.start()
@@ -153,11 +153,11 @@ class Crawler(object):
                     for new_url in new_urls:
                         self.inUrlQueue.put(new_url)
                 #根据URL找到对应的处理类，然后调用解析方法
-                for k in cfg.reURLs.keys():
+                for k in cfg.urlREs.keys():
                     pattern = re.compile(k)
                     if pattern.match(url):
                         #找到对应的URL处理类
-                        dealURL = self.glbl[cfg.reURLs[k]]
+                        dealURL = self.glbl[cfg.urlREs[k]]
                         dealurl = dealURL()
                         content = dealurl.Parse(html)
                         if content is not None:
@@ -179,11 +179,11 @@ class Crawler(object):
                 url = urlContent[0]
                 content = urlContent[1]
                 #根据URL找到对应的处理类，然后调用输出方法
-                for k in cfg.reURLs.keys():
+                for k in cfg.urlREs.keys():
                     pattern = re.compile(k)
                     if pattern.match(url):
                         #找到对应的URL处理类
-                        dealURL = self.glbl[cfg.reURLs[k]]
+                        dealURL = self.glbl[cfg.urlREs[k]]
                         dealurl = dealURL()
                         dealurl.Output(content)
             except Exception as e:

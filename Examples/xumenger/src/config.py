@@ -4,22 +4,23 @@
 isMultiProcess = False
 
 #下载线程/进程个数
-downloadCount = 1
+downloaderCount = 1
 
 #解析线程/进程个数
-parseCount = 1
+parserCount = 1
 
 #数据输出进程/线程个数
-outputCount = 1
+outputerCount = 1
 
-#匹配的URL正则表达式，以及对应的处理类的类名
-reURLs = {'http://www.xumenger.com/.*/': 'xumenger', 
+#匹配的URL正则表达式，以及对应的处理类
+urlREs = {'http://www.xumenger.com/.*/': 'xumenger', 
           'http://www.xumenger.com/page.*': 'page'}
 
-#开始爬取的URL，支持配置多个URL，可用于同时抓取多个网站
+#开始爬取的URL，支持配置以同时开始抓取多个网站
 startURLs = ['http://www.xumenger.com', ]
 
 #忽略不处理的URL
 exceptURLs = ['http://www.xumenger.com/tags.*',
-              'http://www.xumenger.com/categories.*']
-
+              'http://www.xumenger.com/categories.*',
+              'http://www.xumenger.com/download/.*',
+              'http://www.xumenger.com/media/.*']
